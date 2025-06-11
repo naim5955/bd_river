@@ -1,0 +1,3 @@
+titiler[all]==0.10.0
+uvicorn[standard]==0.22.0
+fastapi==0.95.2
