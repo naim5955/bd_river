@@ -1,45 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Bangladesh River NDVI Viewer</title>
+  <meta charset="UTF-8" />
+  <title>Padma River NDVI/NDWI Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+  
   <style>
-    body, html { margin: 0; padding: 0; height: 100%; }
-    #map { width: 100%; height: 100vh; }
+    body, html { height: 100%; margin: 0; }
+    #map { height: 90vh; }
+    #controls { padding: 10px; background: #fff; }
   </style>
 </head>
 <body>
+  <div id="controls">
+    <label for="product">Select product: </label>
+    <select id="product">
+      <option value="ndvi">NDVI</option>
+      <option value="ndwi">NDWI</option>
+    </select>
+  </div>
   <div id="map"></div>
-
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
+  
   <script>
-    // Initialize Leaflet map
-    const map = L.map('map').setView([23.7, 90.4], 9); // Dhaka-centered
+    const backendURL = "https://bd-river-4.onrender.com";
+    const tifFile = `${backendURL}/data/Padma_Q4_2022.tif`;
+    const mapCenter = [23.7, 90.4];
+    const zoomLevel = 9;
 
-    // Add OpenStreetMap base layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+    const map = L.map("map").setView(mapCenter, zoomLevel);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap contributors",
     }).addTo(map);
 
-    // Your TiTiler deployment URL
-    const titilerUrl = 'https://bd-river-4.onrender.com';
+    let tileLayer;
 
-    // 🔁 Replace this with your actual COG (NDVI or NDWI) URL
-    const cogUrl = 'https://your-public-bucket.com/ndvi_2022_q1.tif';
-
-    // Add TiTiler tile layer
-    const ndviLayer = L.tileLayer(
-      `${titilerUrl}/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url=${encodeURIComponent(cogUrl)}`,
-      {
-        attribution: 'NDVI from TiTiler',
-        tileSize: 256,
-        maxZoom: 18
+    function addTileLayer(product) {
+      if (tileLayer) {
+        map.removeLayer(tileLayer);
       }
-    );
+      const tileURL = `${backendURL}/cog/${product}/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url=${encodeURIComponent(tifFile)}`;
+      tileLayer = L.tileLayer(tileURL, {
+        tileSize: 256,
+        maxZoom: 19,
+        attribution: `© ${product.toUpperCase()} from TiTiler backend`,
+      }).addTo(map);
+    }
 
-    ndviLayer.addTo(map);
+    addTileLayer("ndvi");
+
+    document.getElementById("product").addEventListener("change", (e) => {
+      addTileLayer(e.target.value);
+    });
   </script>
 </body>
 </html>
