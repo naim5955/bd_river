@@ -1,101 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Padma NDVI/NDWI Viewer</title>
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <meta charset="UTF-8">
+  <title>Bangladesh River NDVI Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <style>
-    html,
-    body,
-    #map {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-    #controls {
-      position: absolute;
-      top: 10px;
-      left: 50px;
-      z-index: 1000;
-      background: white;
-      padding: 8px;
-      border-radius: 4px;
-      box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
-      font-family: Arial, sans-serif;
-    }
+    body, html { margin: 0; padding: 0; height: 100%; }
+    #map { width: 100%; height: 100vh; }
   </style>
 </head>
 <body>
-  <div id="controls">
-    <label for="quarter">Select Quarter:</label>
-    <select id="quarter">
-      <option value="Padma_Q1_2022.tif">Q1 2022</option>
-      <option value="Padma_Q2_2022.tif">Q2 2022</option>
-      <option value="Padma_Q3_2022.tif">Q3 2022</option>
-      <option value="Padma_Q4_2022.tif">Q4 2022</option>
-    </select>
-
-    <label for="product">Select Product:</label>
-    <select id="product">
-      <option value="true">True Color</option>
-      <option value="ndvi">NDVI</option>
-      <option value="ndwi">NDWI</option>
-    </select>
-  </div>
-
   <div id="map"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
   <script>
-    const renderUrl = "http://localhost:8000";
+    // Initialize Leaflet map
+    const map = L.map('map').setView([23.7, 90.4], 9); // Dhaka-centered
 
-
-    const map = L.map("map").setView([23.9, 90.1], 10); // Padma approx center
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 18,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    // Add OpenStreetMap base layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    let overlay;
+    // Your TiTiler deployment URL
+    const titilerUrl = 'https://bd-river-4.onrender.com';
 
-    function getTileUrl(file, product) {
-      const base = `${renderUrl}/cog/data/${file}/tiles/{z}/{x}/{y}.png`;
+    // 🔁 Replace this with your actual COG (NDVI or NDWI) URL
+    const cogUrl = 'https://your-public-bucket.com/ndvi_2022_q1.tif';
 
-      if (product === "true")
-        return `${base}?bidx=3,2,1&rescale=0,3000`; // B4,B3,B2 bands for true color
-
-      if (product === "ndvi")
-        return `${base}?expression=${encodeURIComponent(
-          "(b4-b3)/(b4+b3)"
-        )}&rescale=-1,1&colormap_name=RdYlGn`;
-
-      if (product === "ndwi")
-        return `${base}?expression=${encodeURIComponent(
-          "(b2-b4)/(b2+b4)"
-        )}&rescale=-1,1&colormap_name=Blues`;
-    }
-
-    function refreshLayer() {
-      const quarter = document.getElementById("quarter").value;
-      const product = document.getElementById("product").value;
-
-      if (overlay) {
-        map.removeLayer(overlay);
+    // Add TiTiler tile layer
+    const ndviLayer = L.tileLayer(
+      `${titilerUrl}/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?url=${encodeURIComponent(cogUrl)}`,
+      {
+        attribution: 'NDVI from TiTiler',
+        tileSize: 256,
+        maxZoom: 18
       }
+    );
 
-      overlay = L.tileLayer(getTileUrl(quarter, product), { opacity: 0.75 }).addTo(map);
-    }
-
-    document.getElementById("quarter").addEventListener("change", refreshLayer);
-    document.getElementById("product").addEventListener("change", refreshLayer);
-
-    // Load initial layer
-    refreshLayer();
+    ndviLayer.addTo(map);
   </script>
 </body>
 </html>
