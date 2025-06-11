@@ -1,76 +1,96 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>NDVI/NDWI Viewer</title>
-  <meta charset="utf-8" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
   <style>
-    #map { height: 100vh; }
+    body, html { margin: 0; padding: 0; height: 100%; }
+    #map { height: 100%; }
     #selector {
       position: absolute;
-      top: 10px; left: 50px;
+      top: 10px;
+      left: 50px;
       z-index: 1000;
       background: white;
       padding: 10px;
-      border-radius: 5px;
+      border-radius: 6px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+    select, button {
+      font-size: 16px;
+      padding: 6px;
+      margin-right: 10px;
     }
   </style>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
+  <div id="selector">
+    <select id="fileSelect">
+      <option value="">-- Select NDVI/NDWI file --</option>
+    </select>
+    <button id="loadBtn">Load Image</button>
+  </div>
 
-<div id="selector">
-  <select id="fileSelect"></select>
-  <button onclick="loadImage()">Load</button>
-</div>
+  <div id="map"></div>
 
-<div id="map"></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const backendURL = "https://bd-river-4.onrender.com"; // Your backend URL
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script>
-  const backendURL = "https://bd-river-4.onrender.com"; // Your backend URL
+    const map = L.map("map").setView([23.7, 90.4], 8); // Bangladesh center
 
-  const map = L.map('map').setView([23.7, 90.4], 8); // Center on Bangladesh
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "© OpenStreetMap contributors"
+    }).addTo(map);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-  }).addTo(map);
+    let tiffLayer = null;
 
-  // Layer to show the TIFF (use a placeholder here)
-  let tiffLayer = null;
+    // Populate dropdown with files from backend
+    fetch(`${backendURL}/files`)
+      .then(res => res.json())
+      .then(data => {
+        const select = document.getElementById("fileSelect");
+        data.files.forEach(file => {
+          const option = document.createElement("option");
+          option.value = file;
+          option.textContent = file;
+          select.appendChild(option);
+        });
+      })
+      .catch(err => alert("Failed to load file list: " + err));
 
-  // Fetch files list from backend
-  fetch(`${backendURL}/files`)
-    .then(res => res.json())
-    .then(data => {
-      const select = document.getElementById('fileSelect');
-      data.files.forEach(f => {
-        let option = document.createElement('option');
-        option.value = f;
-        option.textContent = f;
-        select.appendChild(option);
-      });
-    });
+    document.getElementById("loadBtn").onclick = () => {
+      const selectedFile = document.getElementById("fileSelect").value;
+      if (!selectedFile) {
+        alert("Please select a file first.");
+        return;
+      }
 
-  // Load COG TIFF as image overlay using titiler or another tile server
-  function loadImage() {
-    const filename = document.getElementById('fileSelect').value;
-    if (tiffLayer) {
-      map.removeLayer(tiffLayer);
-    }
-    if (!filename) return alert("Please select a file.");
+      // Remove old layer if any
+      if (tiffLayer) {
+        map.removeLayer(tiffLayer);
+        tiffLayer = null;
+      }
 
-    // Assuming your titiler backend is at /cog endpoint and supports standard tiling URLs:
-    // You must have titiler deployed and running separately, serving your data.
-    // For example URL format:
-    // https://bd-river-4.onrender.com/cog/tiff/{filename}/tiles/{z}/{x}/{y}.png
+      // URL template for TiTiler tile service:
+      // Replace spaces or unsafe chars in filename with encodeURIComponent
+      const tileUrl = `${backendURL}/cog/tiff/${encodeURIComponent(selectedFile)}/tiles/{z}/{x}/{y}.png`;
 
-    // But since your backend does NOT serve tiling yet, this is a placeholder:
-    // You will need to integrate titiler or similar for proper tiled display.
-    // For now, let's just alert the filename (you can build from here).
+      // Add new tile layer for the COG
+      tiffLayer = L.tileLayer(tileUrl, {
+        tileSize: 256,
+        maxZoom: 12,
+        attribution: "Raster data © Your Data Source"
+      }).addTo(map);
 
-    alert("To view the image properly, deploy TiTiler and connect to it with this filename:\n" + filename);
-  }
-</script>
-
+      alert(`Loading ${selectedFile} from TiTiler tile service.`);
+    };
+  </script>
 </body>
 </html>
