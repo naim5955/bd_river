@@ -1,3 +1,7 @@
-titiler[all]==0.10.0
-uvicorn[standard]==0.22.0
-fastapi==0.95.2
+fastapi==0.88.0
+uvicorn==0.22.0
+titiler.application==0.10.0
+titiler.core==0.10.0
+titiler.mosaic==0.10.0
+rio-tiler==4.1.13
+rasterio
